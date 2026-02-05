@@ -77,6 +77,9 @@ function buildOccupancyGrid(pixelData: ImageData): boolean[][] {
   const { width, height, data } = pixelData;
   const grid: boolean[][] = [];
   
+  // Alpha threshold for considering a pixel as occupied
+  const ALPHA_THRESHOLD = 30;
+  
   for (let row = 0; row < height; row++) {
     grid[row] = [];
     for (let col = 0; col < width; col++) {
@@ -84,7 +87,7 @@ function buildOccupancyGrid(pixelData: ImageData): boolean[][] {
       const alpha = data[pixelIndex + 3];
       
       // Check if pixel is visible (has some opacity)
-      grid[row][col] = alpha > 30;
+      grid[row][col] = alpha > ALPHA_THRESHOLD;
     }
   }
   
@@ -114,71 +117,65 @@ function findPerimeterStart(grid: boolean[][]): Point2D | null {
 
 /**
  * Traces around the perimeter of the shape collecting boundary coordinates
+ * Uses a modified Moore-Neighbor contour following algorithm
  */
 function walkPerimeter(grid: boolean[][], start: Point2D): Point2D[] {
   const points: Point2D[] = [];
   const rows = grid.length;
   const cols = grid[0].length;
   
-  const visited = new Set<string>();
-  const queue: Point2D[] = [start];
-  
-  // Directions: right, down, left, up, and diagonals
+  // Moore neighborhood: 8 directions in clockwise order starting from right
   const directions = [
-    { col: 1, row: 0 },   // right
-    { col: 0, row: 1 },   // down
-    { col: -1, row: 0 },  // left
-    { col: 0, row: -1 },  // up
-    { col: 1, row: 1 },   // down-right
-    { col: -1, row: 1 },  // down-left
-    { col: 1, row: -1 },  // up-right
-    { col: -1, row: -1 }, // up-left
+    { col: 1, row: 0 },   // E
+    { col: 1, row: 1 },   // SE
+    { col: 0, row: 1 },   // S
+    { col: -1, row: 1 },  // SW
+    { col: -1, row: 0 },  // W
+    { col: -1, row: -1 }, // NW
+    { col: 0, row: -1 },  // N
+    { col: 1, row: -1 },  // NE
   ];
   
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    const key = `${current.col},${current.row}`;
+  let current = start;
+  let dirIndex = 0; // Start searching from right
+  let iterations = 0;
+  const maxIterations = rows * cols; // Prevent infinite loops
+  
+  do {
+    points.push({ ...current });
     
-    if (visited.has(key)) continue;
-    visited.add(key);
-    
-    // Check if this is a boundary pixel (has at least one empty neighbor)
-    let isBoundary = false;
-    for (const dir of directions) {
-      const neighborCol = current.col + dir.col;
-      const neighborRow = current.row + dir.row;
+    // Search for next boundary pixel in clockwise order
+    let found = false;
+    for (let i = 0; i < 8; i++) {
+      const searchDir = (dirIndex + i) % 8;
+      const neighborCol = current.col + directions[searchDir].col;
+      const neighborRow = current.row + directions[searchDir].row;
       
-      if (
-        neighborCol < 0 || neighborCol >= cols ||
-        neighborRow < 0 || neighborRow >= rows ||
-        !grid[neighborRow][neighborCol]
-      ) {
-        isBoundary = true;
-        break;
-      }
-    }
-    
-    if (isBoundary) {
-      points.push(current);
-    }
-    
-    // Add occupied neighbors to queue
-    for (const dir of directions) {
-      const neighborCol = current.col + dir.col;
-      const neighborRow = current.row + dir.row;
-      
+      // Check if neighbor is within bounds and occupied
       if (
         neighborCol >= 0 && neighborCol < cols &&
         neighborRow >= 0 && neighborRow < rows &&
         grid[neighborRow][neighborCol]
       ) {
-        const neighborKey = `${neighborCol},${neighborRow}`;
-        if (!visited.has(neighborKey)) {
-          queue.push({ col: neighborCol, row: neighborRow });
-        }
+        // Move to this neighbor
+        current = { col: neighborCol, row: neighborRow };
+        // Update search direction for next iteration
+        dirIndex = (searchDir + 6) % 8; // Look back counter-clockwise
+        found = true;
+        break;
       }
     }
-  }
+    
+    if (!found) break; // No more boundary pixels found
+    
+    iterations++;
+    if (iterations > maxIterations) {
+      console.warn('Perimeter walk exceeded max iterations');
+      break;
+    }
+    
+    // Stop when we return to start position
+  } while (current.col !== start.col || current.row !== start.row || iterations < 2);
   
   return points;
 }
@@ -189,16 +186,22 @@ function walkPerimeter(grid: boolean[][], start: Point2D): Point2D[] {
 function simplifyPointSequence(points: Point2D[]): Point2D[] {
   if (points.length <= 3) return points;
   
+  // Use adaptive step size based on total points
+  const targetPoints = Math.min(200, Math.max(20, Math.floor(points.length / 10)));
+  const stepSize = Math.max(1, Math.floor(points.length / targetPoints));
+  
   const simplified: Point2D[] = [];
   
-  // Keep every Nth point and points where direction changes significantly
-  for (let i = 0; i < points.length; i += 5) {
+  // Sample points at regular intervals
+  for (let i = 0; i < points.length; i += stepSize) {
     simplified.push(points[i]);
   }
   
-  // Always include last point
-  if (simplified[simplified.length - 1] !== points[points.length - 1]) {
-    simplified.push(points[points.length - 1]);
+  // Always include last point if not already included
+  const lastPoint = points[points.length - 1];
+  const lastSimplified = simplified[simplified.length - 1];
+  if (lastSimplified.col !== lastPoint.col || lastSimplified.row !== lastPoint.row) {
+    simplified.push(lastPoint);
   }
   
   return simplified;
