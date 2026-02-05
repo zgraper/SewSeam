@@ -17,7 +17,8 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
   const regions = useStore((state) => state.regions);
   const selectedRegionId = useStore((state) => state.selectedRegionId);
   const setSelectedRegionId = useStore((state) => state.setSelectedRegionId);
-  const fabric = useStore((state) => state.fabric);
+  const { fabrics, selectedFabricId } = useStore();
+  const fabric = fabrics.find((f) => f.id === selectedFabricId);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });

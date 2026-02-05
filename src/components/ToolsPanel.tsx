@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { useRef } from 'react';
 
 export default function ToolsPanel() {
-  const { setPattern, setFabric, reset } = useStore();
+  const { addPattern, addFabric, reset } = useStore();
   const patternInputRef = useRef<HTMLInputElement>(null);
   const fabricInputRef = useRef<HTMLInputElement>(null);
 
@@ -16,7 +16,8 @@ export default function ToolsPanel() {
     if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
       reader.onload = (event) => {
         const svgText = event.target?.result as string;
-        setPattern({
+        addPattern({
+          id: crypto.randomUUID(),
           name: file.name,
           type: 'svg',
           svgText,
@@ -26,7 +27,8 @@ export default function ToolsPanel() {
     } else if (file.type.startsWith('image/')) {
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
-        setPattern({
+        addPattern({
+          id: crypto.randomUUID(),
           name: file.name,
           type: 'image',
           imageUrl,
@@ -34,6 +36,9 @@ export default function ToolsPanel() {
       };
       reader.readAsDataURL(file);
     }
+    
+    // Reset input so the same file can be uploaded again
+    e.target.value = '';
   };
 
   const handleFabricUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,12 +48,16 @@ export default function ToolsPanel() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const imageUrl = event.target?.result as string;
-      setFabric({
+      addFabric({
+        id: crypto.randomUUID(),
         name: file.name,
         imageUrl,
       });
     };
     reader.readAsDataURL(file);
+    
+    // Reset input so the same file can be uploaded again
+    e.target.value = '';
   };
 
   return (

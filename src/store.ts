@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export interface Pattern {
+  id: string;
   name: string;
   type: 'svg' | 'image';
   svgText?: string;
@@ -8,6 +9,7 @@ export interface Pattern {
 }
 
 export interface Fabric {
+  id: string;
   name: string;
   imageUrl: string;
 }
@@ -30,8 +32,10 @@ export interface Region {
 export type DrawerType = 'tools' | 'regions' | 'properties' | null;
 
 interface AppState {
-  pattern: Pattern | null;
-  fabric: Fabric | null;
+  patterns: Pattern[];
+  fabrics: Fabric[];
+  selectedPatternId: string | null;
+  selectedFabricId: string | null;
   regions: Region[];
   selectedRegionId: string | null;
   ui: {
@@ -39,8 +43,12 @@ interface AppState {
   };
 
   // Actions
-  setPattern: (pattern: Pattern | null) => void;
-  setFabric: (fabric: Fabric | null) => void;
+  addPattern: (pattern: Pattern) => void;
+  removePattern: (id: string) => void;
+  addFabric: (fabric: Fabric) => void;
+  removeFabric: (id: string) => void;
+  setSelectedPatternId: (id: string | null) => void;
+  setSelectedFabricId: (id: string | null) => void;
   addRegion: (region: Region) => void;
   updateRegion: (id: string, updates: Partial<Region>) => void;
   removeRegion: (id: string) => void;
@@ -50,8 +58,10 @@ interface AppState {
 }
 
 const initialState = {
-  pattern: null,
-  fabric: null,
+  patterns: [],
+  fabrics: [],
+  selectedPatternId: null,
+  selectedFabricId: null,
   regions: [],
   selectedRegionId: null,
   ui: {
@@ -62,8 +72,20 @@ const initialState = {
 export const useStore = create<AppState>((set) => ({
   ...initialState,
 
-  setPattern: (pattern) => set({ pattern }),
-  setFabric: (fabric) => set({ fabric }),
+  addPattern: (pattern) => set((state) => ({ patterns: [...state.patterns, pattern] })),
+  removePattern: (id) =>
+    set((state) => ({
+      patterns: state.patterns.filter((p) => p.id !== id),
+      selectedPatternId: state.selectedPatternId === id ? null : state.selectedPatternId,
+    })),
+  addFabric: (fabric) => set((state) => ({ fabrics: [...state.fabrics, fabric] })),
+  removeFabric: (id) =>
+    set((state) => ({
+      fabrics: state.fabrics.filter((f) => f.id !== id),
+      selectedFabricId: state.selectedFabricId === id ? null : state.selectedFabricId,
+    })),
+  setSelectedPatternId: (id) => set({ selectedPatternId: id }),
+  setSelectedFabricId: (id) => set({ selectedFabricId: id }),
   addRegion: (region) => set((state) => ({ regions: [...state.regions, region] })),
   updateRegion: (id, updates) =>
     set((state) => ({

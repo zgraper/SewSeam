@@ -1,6 +1,7 @@
 import { useStore } from './store';
 import TopBar from './components/TopBar';
 import ToolsPanel from './components/ToolsPanel';
+import LibraryPanel from './components/LibraryPanel';
 import Workspace from './components/Workspace';
 import PropertiesPanel from './components/PropertiesPanel';
 import MobileToolbar, { MobileDrawer } from './components/MobileToolbar';
@@ -14,9 +15,11 @@ function App() {
 
       {/* Desktop 3-column layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Tools (hidden on mobile) */}
+        {/* Left Panel - Tools and Library (hidden on mobile) */}
         <aside className="hidden md:block w-64 bg-white border-r border-gray-200 overflow-y-auto">
           <ToolsPanel />
+          <div className="border-t border-gray-200" />
+          <LibraryPanel />
         </aside>
 
         {/* Center - Workspace */}
@@ -37,9 +40,11 @@ function App() {
       <MobileDrawer
         isOpen={ui.activeDrawer === 'tools'}
         onClose={() => setActiveDrawer(null)}
-        title="Tools"
+        title="Tools & Library"
       >
         <ToolsPanel />
+        <div className="border-t border-gray-200" />
+        <LibraryPanel />
       </MobileDrawer>
 
       <MobileDrawer
