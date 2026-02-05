@@ -1,13 +1,14 @@
 import { Upload, MousePointer, Scissors, RotateCcw } from 'lucide-react';
 import { useStore } from '../store';
 import { useRef } from 'react';
+import { extractOuterBoundary } from '../utils/rasterBoundaryExtractor';
 
 export default function ToolsPanel() {
   const { addPattern, addFabric, reset } = useStore();
   const patternInputRef = useRef<HTMLInputElement>(null);
   const fabricInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePatternUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePatternUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -25,13 +26,18 @@ export default function ToolsPanel() {
       };
       reader.readAsText(file);
     } else if (file.type.startsWith('image/')) {
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const imageUrl = event.target?.result as string;
+        
+        // Extract boundary from raster image
+        const boundaryResult = await extractOuterBoundary(imageUrl);
+        
         addPattern({
           id: crypto.randomUUID(),
           name: file.name,
           type: 'image',
           imageUrl,
+          convertedPathData: boundaryResult.success ? boundaryResult.pathString : undefined,
         });
       };
       reader.readAsDataURL(file);

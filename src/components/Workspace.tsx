@@ -28,7 +28,7 @@ export default function Workspace() {
 
         // Initialize region from the first path element (outer boundary)
         // Only create a region if this is a new pattern (different from previous)
-        const patternKey = pattern.name + pattern.svgText.substring(0, 100);
+        const patternKey = pattern.id + '|svg|' + pattern.name;
         if (prevPatternRef.current !== patternKey) {
           prevPatternRef.current = patternKey;
           
@@ -53,6 +53,25 @@ export default function Workspace() {
             }
           }
         }
+      }
+    } else if (pattern?.type === 'image' && pattern.convertedPathData) {
+      // For raster images with converted path data, create a region
+      const patternKey = pattern.id + '|raster|' + pattern.name;
+      if (prevPatternRef.current !== patternKey) {
+        prevPatternRef.current = patternKey;
+        
+        addRegion({
+          id: crypto.randomUUID(),
+          name: 'Pattern Boundary',
+          pathData: pattern.convertedPathData,
+          transform: '',
+          fabricTransform: {
+            x: 0,
+            y: 0,
+            scale: 1,
+            rotation: 0,
+          },
+        });
       }
     }
   }, [pattern, addRegion]);
