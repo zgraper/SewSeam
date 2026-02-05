@@ -42,7 +42,7 @@ export default function Workspace() {
           </WorkspaceStage>
         ) : pattern.type === 'image' && pattern.imageUrl ? (
           <WorkspaceStage>
-            <image href={pattern.imageUrl} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" />
+            <image href={pattern.imageUrl} x="0" y="0" width="800" height="600" preserveAspectRatio="xMidYMid meet" />
           </WorkspaceStage>
         ) : null}
       </div>
