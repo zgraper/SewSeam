@@ -17,6 +17,7 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
   const regions = useStore((state) => state.regions);
   const selectedRegionId = useStore((state) => state.selectedRegionId);
   const setSelectedRegionId = useStore((state) => state.setSelectedRegionId);
+  const fabric = useStore((state) => state.fabric);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
@@ -151,6 +152,30 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
       onWheel={handleWheel}
       style={{ cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
     >
+      <defs>
+        {/* Define fabric patterns for each region */}
+        {fabric && regions.map((region) => {
+          const ft = region.fabricTransform;
+          return (
+            <pattern
+              key={`pattern-${region.id}`}
+              id={`fabric-pattern-${region.id}`}
+              patternUnits="userSpaceOnUse"
+              width="100"
+              height="100"
+              patternTransform={`translate(${ft.x}, ${ft.y}) scale(${ft.scale}) rotate(${ft.rotation} 50 50)`}
+            >
+              <image
+                href={fabric.imageUrl}
+                width="100"
+                height="100"
+                preserveAspectRatio="xMidYMid slice"
+              />
+            </pattern>
+          );
+        })}
+      </defs>
+      
       <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
         {children}
         
@@ -160,7 +185,7 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
             key={region.id}
             d={region.pathData}
             transform={region.transform}
-            fill="rgba(59, 130, 246, 0.1)"
+            fill={fabric ? `url(#fabric-pattern-${region.id})` : "rgba(59, 130, 246, 0.1)"}
             stroke={selectedRegionId === region.id ? "#3b82f6" : "#93c5fd"}
             strokeWidth={selectedRegionId === region.id ? "3" : "2"}
             className="cursor-pointer transition-all"
