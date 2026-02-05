@@ -5,9 +5,9 @@ import { useRef, useEffect } from 'react';
 
 export default function Workspace() {
   const pattern = useStore((state) => state.pattern);
-  const regions = useStore((state) => state.regions);
   const addRegion = useStore((state) => state.addRegion);
   const svgContainerRef = useRef<SVGGElement>(null);
+  const prevPatternRef = useRef<string | null>(null);
 
   // Parse and extract SVG content when pattern changes
   useEffect(() => {
@@ -27,8 +27,11 @@ export default function Workspace() {
         });
 
         // Initialize region from the first path element (outer boundary)
-        // Only create a region if one doesn't already exist for this pattern
-        if (regions.length === 0) {
+        // Only create a region if this is a new pattern (different from previous)
+        const patternKey = pattern.name + pattern.svgText.substring(0, 100);
+        if (prevPatternRef.current !== patternKey) {
+          prevPatternRef.current = patternKey;
+          
           const firstPath = svgElement.querySelector('path');
           if (firstPath) {
             const pathData = firstPath.getAttribute('d');
@@ -52,7 +55,7 @@ export default function Workspace() {
         }
       }
     }
-  }, [pattern, regions.length, addRegion]);
+  }, [pattern, addRegion]);
 
   return (
     <div className="w-full h-full p-4 bg-gray-50">
