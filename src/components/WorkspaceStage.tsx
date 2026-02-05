@@ -163,7 +163,7 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
               patternUnits="userSpaceOnUse"
               width="100"
               height="100"
-              patternTransform={`translate(${ft.x}, ${ft.y}) scale(${ft.scale}) rotate(${ft.rotation})`}
+              patternTransform={`translate(${ft.x}, ${ft.y}) scale(${ft.scale}) rotate(${ft.rotation} 50 50)`}
             >
               <image
                 href={fabric.imageUrl}
