@@ -6,6 +6,7 @@ export interface Pattern {
   type: 'svg' | 'image';
   svgText?: string;
   imageUrl?: string;
+  convertedPathData?: string; // SVG path extracted from raster images
 }
 
 export interface Fabric {

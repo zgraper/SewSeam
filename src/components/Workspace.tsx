@@ -54,6 +54,25 @@ export default function Workspace() {
           }
         }
       }
+    } else if (pattern?.type === 'image' && pattern.convertedPathData) {
+      // For raster images with converted path data, create a region
+      const patternKey = pattern.name + pattern.convertedPathData.substring(0, 100);
+      if (prevPatternRef.current !== patternKey) {
+        prevPatternRef.current = patternKey;
+        
+        addRegion({
+          id: crypto.randomUUID(),
+          name: 'Pattern Boundary',
+          pathData: pattern.convertedPathData,
+          transform: '',
+          fabricTransform: {
+            x: 0,
+            y: 0,
+            scale: 1,
+            rotation: 0,
+          },
+        });
+      }
     }
   }, [pattern, addRegion]);
 
