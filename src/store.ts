@@ -23,6 +23,7 @@ export interface Region {
   id: string;
   name: string;
   pathData: string;
+  transform: string;
   fabricTransform: FabricTransform;
 }
 

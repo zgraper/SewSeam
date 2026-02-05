@@ -5,7 +5,9 @@ import { useRef, useEffect } from 'react';
 
 export default function Workspace() {
   const pattern = useStore((state) => state.pattern);
+  const addRegion = useStore((state) => state.addRegion);
   const svgContainerRef = useRef<SVGGElement>(null);
+  const prevPatternRef = useRef<string | null>(null);
 
   // Parse and extract SVG content when pattern changes
   useEffect(() => {
@@ -23,13 +25,41 @@ export default function Workspace() {
         Array.from(svgElement.children).forEach(child => {
           svgContainerRef.current?.appendChild(child.cloneNode(true));
         });
+
+        // Initialize region from the first path element (outer boundary)
+        // Only create a region if this is a new pattern (different from previous)
+        const patternKey = pattern.name + pattern.svgText.substring(0, 100);
+        if (prevPatternRef.current !== patternKey) {
+          prevPatternRef.current = patternKey;
+          
+          const firstPath = svgElement.querySelector('path');
+          if (firstPath) {
+            const pathData = firstPath.getAttribute('d');
+            const transform = firstPath.getAttribute('transform') || '';
+            
+            if (pathData) {
+              addRegion({
+                id: crypto.randomUUID(),
+                name: 'Outer Boundary',
+                pathData,
+                transform,
+                fabricTransform: {
+                  x: 0,
+                  y: 0,
+                  scale: 1,
+                  rotation: 0,
+                },
+              });
+            }
+          }
+        }
       }
     }
-  }, [pattern]);
+  }, [pattern, addRegion]);
 
   return (
-    <div className="flex-1 p-4 bg-gray-50 overflow-auto">
-      <div className="h-full border-2 border-gray-300 rounded bg-white flex items-center justify-center">
+    <div className="w-full h-full p-4 bg-gray-50">
+      <div className="w-full h-full min-h-[600px] border-2 border-gray-300 rounded bg-white flex items-center justify-center">
         {!pattern ? (
           <div className="text-center text-gray-400">
             <FileImage size={48} className="mx-auto mb-3 opacity-50" />

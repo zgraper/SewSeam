@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { MouseEvent, TouchEvent, WheelEvent } from 'react';
+import { useStore } from '../store';
 
 interface WorkspaceStageProps {
   children: React.ReactNode;
@@ -13,6 +14,9 @@ interface Transform {
 
 export default function WorkspaceStage({ children }: WorkspaceStageProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const regions = useStore((state) => state.regions);
+  const selectedRegionId = useStore((state) => state.selectedRegionId);
+  const setSelectedRegionId = useStore((state) => state.setSelectedRegionId);
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
@@ -149,6 +153,24 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
     >
       <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
         {children}
+        
+        {/* Render regions as SVG paths */}
+        {regions.map((region) => (
+          <path
+            key={region.id}
+            d={region.pathData}
+            transform={region.transform}
+            fill="rgba(59, 130, 246, 0.1)"
+            stroke={selectedRegionId === region.id ? "#3b82f6" : "#93c5fd"}
+            strokeWidth={selectedRegionId === region.id ? "3" : "2"}
+            className="cursor-pointer transition-all"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedRegionId(region.id);
+            }}
+            style={{ pointerEvents: 'all' }}
+          />
+        ))}
       </g>
     </svg>
   );
