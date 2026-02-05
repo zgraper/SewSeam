@@ -4,8 +4,8 @@ import WorkspaceStage from './WorkspaceStage';
 import { useRef, useEffect } from 'react';
 
 export default function Workspace() {
-  const pattern = useStore((state) => state.pattern);
-  const addRegion = useStore((state) => state.addRegion);
+  const { patterns, selectedPatternId, addRegion } = useStore();
+  const pattern = patterns.find((p) => p.id === selectedPatternId);
   const svgContainerRef = useRef<SVGGElement>(null);
   const prevPatternRef = useRef<string | null>(null);
 
