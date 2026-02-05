@@ -1,8 +1,19 @@
 import { useStore } from '../store';
+import type { FabricTransform } from '../store';
 
 export default function PropertiesPanel() {
-  const { regions, selectedRegionId } = useStore();
+  const { regions, selectedRegionId, updateRegion } = useStore();
   const selectedRegion = regions.find((r) => r.id === selectedRegionId);
+
+  const handleFabricTransformChange = (property: keyof FabricTransform, value: number) => {
+    if (!selectedRegion) return;
+    updateRegion(selectedRegion.id, {
+      fabricTransform: {
+        ...selectedRegion.fabricTransform,
+        [property]: value,
+      },
+    });
+  };
 
   return (
     <div className="p-4 space-y-4">
@@ -24,50 +35,62 @@ export default function PropertiesPanel() {
             <label className="text-xs text-gray-600 block">Fabric Transform</label>
             
             <div>
-              <label className="text-xs text-gray-500">X Position</label>
+              <label className="text-xs text-gray-500 flex justify-between">
+                <span>X Position</span>
+                <span className="font-mono">{selectedRegion.fabricTransform.x}</span>
+              </label>
               <input
                 type="range"
                 min="-100"
                 max="100"
                 value={selectedRegion.fabricTransform.x}
-                readOnly
+                onChange={(e) => handleFabricTransformChange('x', Number(e.target.value))}
                 className="w-full"
               />
             </div>
 
             <div>
-              <label className="text-xs text-gray-500">Y Position</label>
+              <label className="text-xs text-gray-500 flex justify-between">
+                <span>Y Position</span>
+                <span className="font-mono">{selectedRegion.fabricTransform.y}</span>
+              </label>
               <input
                 type="range"
                 min="-100"
                 max="100"
                 value={selectedRegion.fabricTransform.y}
-                readOnly
+                onChange={(e) => handleFabricTransformChange('y', Number(e.target.value))}
                 className="w-full"
               />
             </div>
 
             <div>
-              <label className="text-xs text-gray-500">Scale</label>
+              <label className="text-xs text-gray-500 flex justify-between">
+                <span>Scale</span>
+                <span className="font-mono">{selectedRegion.fabricTransform.scale.toFixed(1)}</span>
+              </label>
               <input
                 type="range"
                 min="0.5"
                 max="2"
                 step="0.1"
                 value={selectedRegion.fabricTransform.scale}
-                readOnly
+                onChange={(e) => handleFabricTransformChange('scale', Number(e.target.value))}
                 className="w-full"
               />
             </div>
 
             <div>
-              <label className="text-xs text-gray-500">Rotation</label>
+              <label className="text-xs text-gray-500 flex justify-between">
+                <span>Rotation</span>
+                <span className="font-mono">{selectedRegion.fabricTransform.rotation}°</span>
+              </label>
               <input
                 type="range"
                 min="0"
                 max="360"
                 value={selectedRegion.fabricTransform.rotation}
-                readOnly
+                onChange={(e) => handleFabricTransformChange('rotation', Number(e.target.value))}
                 className="w-full"
               />
             </div>
