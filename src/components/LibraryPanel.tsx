@@ -41,9 +41,10 @@ export default function LibraryPanel() {
             {/* Thumbnail */}
             <div className="aspect-square bg-gray-100 rounded-t-lg overflow-hidden flex items-center justify-center">
               {pattern.type === 'svg' && pattern.svgText ? (
-                <div 
-                  className="w-full h-full p-2"
-                  dangerouslySetInnerHTML={{ __html: pattern.svgText }}
+                <img
+                  src={`data:image/svg+xml;base64,${btoa(pattern.svgText)}`}
+                  alt={pattern.name}
+                  className="w-full h-full object-contain p-2"
                 />
               ) : pattern.type === 'image' && pattern.imageUrl ? (
                 <img
