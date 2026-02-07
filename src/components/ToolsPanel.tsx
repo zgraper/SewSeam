@@ -3,8 +3,37 @@ import { useStore } from '../store';
 import { useRef } from 'react';
 import { extractOuterBoundary } from '../utils/rasterBoundaryExtractor';
 
+const loadImageSize = (src: string) =>
+  new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () =>
+      resolve({
+        width: img.naturalWidth || img.width,
+        height: img.naturalHeight || img.height,
+      });
+    img.onerror = reject;
+    img.src = src;
+  });
+
+const parseSvgMetadata = (svgText: string) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, 'image/svg+xml');
+  const svgElement = doc.querySelector('svg');
+  if (!svgElement) {
+    return { viewBox: undefined, width: undefined, height: undefined };
+  }
+
+  const viewBox = svgElement.getAttribute('viewBox') || undefined;
+  const widthAttr = svgElement.getAttribute('width');
+  const heightAttr = svgElement.getAttribute('height');
+  const width = widthAttr ? Number.parseFloat(widthAttr) : undefined;
+  const height = heightAttr ? Number.parseFloat(heightAttr) : undefined;
+
+  return { viewBox, width, height };
+};
+
 export default function ToolsPanel() {
-  const { addPattern, addFabric, reset } = useStore();
+  const { addPattern, addFabric, reset, setSelectedFabricId, setSelectedPatternId } = useStore();
   const patternInputRef = useRef<HTMLInputElement>(null);
   const fabricInputRef = useRef<HTMLInputElement>(null);
 
@@ -17,12 +46,21 @@ export default function ToolsPanel() {
     if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
       reader.onload = (event) => {
         const svgText = event.target?.result as string;
+        const metadata = parseSvgMetadata(svgText);
+        const viewBox = metadata.viewBox || (metadata.width && metadata.height
+          ? `0 0 ${metadata.width} ${metadata.height}`
+          : undefined);
+        const patternId = crypto.randomUUID();
         addPattern({
-          id: crypto.randomUUID(),
+          id: patternId,
           name: file.name,
           type: 'svg',
           svgText,
+          width: metadata.width,
+          height: metadata.height,
+          viewBox,
         });
+        setSelectedPatternId(patternId);
       };
       reader.readAsText(file);
     } else if (file.type.startsWith('image/')) {
@@ -30,15 +68,23 @@ export default function ToolsPanel() {
         const imageUrl = event.target?.result as string;
         
         // Extract boundary from raster image
-        const boundaryResult = await extractOuterBoundary(imageUrl);
+        const [boundaryResult, imageSize] = await Promise.all([
+          extractOuterBoundary(imageUrl),
+          loadImageSize(imageUrl),
+        ]);
+        const patternId = crypto.randomUUID();
         
         addPattern({
-          id: crypto.randomUUID(),
+          id: patternId,
           name: file.name,
           type: 'image',
           imageUrl,
           convertedPathData: boundaryResult.success ? boundaryResult.pathString : undefined,
+          width: imageSize.width,
+          height: imageSize.height,
+          viewBox: `0 0 ${imageSize.width} ${imageSize.height}`,
         });
+        setSelectedPatternId(patternId);
       };
       reader.readAsDataURL(file);
     }
@@ -52,13 +98,18 @@ export default function ToolsPanel() {
     if (!file || !file.type.startsWith('image/')) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const imageUrl = event.target?.result as string;
+      const imageSize = await loadImageSize(imageUrl);
+      const fabricId = crypto.randomUUID();
       addFabric({
-        id: crypto.randomUUID(),
+        id: fabricId,
         name: file.name,
         imageUrl,
+        width: imageSize.width,
+        height: imageSize.height,
       });
+      setSelectedFabricId(fabricId);
     };
     reader.readAsDataURL(file);
     

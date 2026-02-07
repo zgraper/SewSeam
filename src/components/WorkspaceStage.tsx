@@ -4,6 +4,7 @@ import { useStore } from '../store';
 
 interface WorkspaceStageProps {
   children: React.ReactNode;
+  viewBox?: string;
 }
 
 interface Transform {
@@ -12,7 +13,7 @@ interface Transform {
   scale: number;
 }
 
-export default function WorkspaceStage({ children }: WorkspaceStageProps) {
+export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const regions = useStore((state) => state.regions);
   const selectedRegionId = useStore((state) => state.selectedRegionId);
@@ -125,8 +126,14 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
     }));
   }, [transform.scale]);
 
-  // Update SVG viewBox dimensions when container size changes
+  // Update SVG viewBox dimensions when container size changes (only when no explicit viewBox)
   useEffect(() => {
+    if (!svgRef.current) return;
+    if (viewBox) {
+      svgRef.current.setAttribute('viewBox', viewBox);
+      return;
+    }
+
     const updateViewBox = () => {
       if (svgRef.current) {
         const rect = svgRef.current.getBoundingClientRect();
@@ -137,12 +144,13 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
     updateViewBox();
     window.addEventListener('resize', updateViewBox);
     return () => window.removeEventListener('resize', updateViewBox);
-  }, []);
+  }, [viewBox]);
 
   return (
     <svg
       ref={svgRef}
       className="w-full h-full"
+      preserveAspectRatio="xMidYMid meet"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -157,19 +165,21 @@ export default function WorkspaceStage({ children }: WorkspaceStageProps) {
         {/* Define fabric patterns for each region */}
         {fabric && regions.map((region) => {
           const ft = region.fabricTransform;
+          const patternWidth = fabric.width || 100;
+          const patternHeight = fabric.height || 100;
           return (
             <pattern
               key={`pattern-${region.id}`}
               id={`fabric-pattern-${region.id}`}
               patternUnits="userSpaceOnUse"
-              width="100"
-              height="100"
-              patternTransform={`translate(${ft.x}, ${ft.y}) scale(${ft.scale}) rotate(${ft.rotation} 50 50)`}
+              width={patternWidth}
+              height={patternHeight}
+              patternTransform={`translate(${ft.x}, ${ft.y}) scale(${ft.scale}) rotate(${ft.rotation} ${patternWidth / 2} ${patternHeight / 2})`}
             >
               <image
                 href={fabric.imageUrl}
-                width="100"
-                height="100"
+                width={patternWidth}
+                height={patternHeight}
                 preserveAspectRatio="xMidYMid slice"
               />
             </pattern>
