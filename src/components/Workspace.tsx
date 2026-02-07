@@ -6,6 +6,8 @@ import { useRef, useEffect } from 'react';
 export default function Workspace() {
   const { patterns, selectedPatternId, addRegion } = useStore();
   const pattern = patterns.find((p) => p.id === selectedPatternId);
+  const patternViewBox = pattern?.viewBox
+    || (pattern?.width && pattern?.height ? `0 0 ${pattern.width} ${pattern.height}` : undefined);
   const svgContainerRef = useRef<SVGGElement>(null);
   const prevPatternRef = useRef<string | null>(null);
 
@@ -86,12 +88,19 @@ export default function Workspace() {
             <p className="text-xs mt-1">Upload a pattern to get started</p>
           </div>
         ) : pattern.type === 'svg' && pattern.svgText ? (
-          <WorkspaceStage>
+          <WorkspaceStage viewBox={patternViewBox}>
             <g ref={svgContainerRef} />
           </WorkspaceStage>
         ) : pattern.type === 'image' && pattern.imageUrl ? (
-          <WorkspaceStage>
-            <image href={pattern.imageUrl} x="0" y="0" width="800" height="600" preserveAspectRatio="xMidYMid meet" />
+          <WorkspaceStage viewBox={patternViewBox}>
+            <image
+              href={pattern.imageUrl}
+              x="0"
+              y="0"
+              width={pattern.width || 800}
+              height={pattern.height || 600}
+              preserveAspectRatio="xMidYMid meet"
+            />
           </WorkspaceStage>
         ) : null}
       </div>

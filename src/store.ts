@@ -7,12 +7,17 @@ export interface Pattern {
   svgText?: string;
   imageUrl?: string;
   convertedPathData?: string; // SVG path extracted from raster images
+  width?: number;
+  height?: number;
+  viewBox?: string;
 }
 
 export interface Fabric {
   id: string;
   name: string;
   imageUrl: string;
+  width?: number;
+  height?: number;
 }
 
 export interface FabricTransform {
