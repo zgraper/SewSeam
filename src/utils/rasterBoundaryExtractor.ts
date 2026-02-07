@@ -39,8 +39,9 @@ export async function extractOuterBoundary(
       // Get pixel data
       const pixelData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Build occupancy grid
-      const occupancyGrid = buildOccupancyGrid(pixelData);
+      // Build occupancy grid based on detected interior (fillable) area
+      const { inkMask, interiorMask } = buildInkAndInteriorMasks(pixelData);
+      const occupancyGrid = hasOccupiedPixels(interiorMask) ? interiorMask : inkMask;
       
       // Find starting point on perimeter
       const startPoint = findPerimeterStart(occupancyGrid);
@@ -73,25 +74,97 @@ export async function extractOuterBoundary(
 /**
  * Creates a 2D grid marking which pixels are occupied (non-transparent)
  */
-function buildOccupancyGrid(pixelData: ImageData): boolean[][] {
+function buildInkAndInteriorMasks(pixelData: ImageData): {
+  inkMask: boolean[][];
+  interiorMask: boolean[][];
+} {
   const { width, height, data } = pixelData;
-  const grid: boolean[][] = [];
-  
-  // Alpha threshold for considering a pixel as occupied
+
+  const inkMask: boolean[][] = [];
+  const lightMask: boolean[][] = [];
+
+  // Thresholds for detecting dark outline vs. light interior/background
   const ALPHA_THRESHOLD = 30;
-  
+  const DARK_LUMINANCE_THRESHOLD = 170;
+
   for (let row = 0; row < height; row++) {
-    grid[row] = [];
+    inkMask[row] = [];
+    lightMask[row] = [];
     for (let col = 0; col < width; col++) {
       const pixelIndex = (row * width + col) * 4;
+      const red = data[pixelIndex];
+      const green = data[pixelIndex + 1];
+      const blue = data[pixelIndex + 2];
       const alpha = data[pixelIndex + 3];
+      const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
       
-      // Check if pixel is visible (has some opacity)
-      grid[row][col] = alpha > ALPHA_THRESHOLD;
+      const visible = alpha > ALPHA_THRESHOLD;
+      const isInk = visible && luminance < DARK_LUMINANCE_THRESHOLD;
+      inkMask[row][col] = isInk;
+      lightMask[row][col] = visible && !isInk;
     }
   }
   
-  return grid;
+  const interiorMask = buildInteriorMask(inkMask, lightMask);
+
+  return { inkMask, interiorMask };
+}
+
+function buildInteriorMask(inkMask: boolean[][], lightMask: boolean[][]): boolean[][] {
+  const rows = lightMask.length;
+  const cols = rows ? lightMask[0].length : 0;
+  const exteriorMask: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const queue: Point2D[] = [];
+
+  const enqueueIfExterior = (row: number, col: number) => {
+    if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+    if (!lightMask[row][col] || exteriorMask[row][col]) return;
+    exteriorMask[row][col] = true;
+    queue.push({ row, col });
+  };
+
+  for (let col = 0; col < cols; col++) {
+    enqueueIfExterior(0, col);
+    enqueueIfExterior(rows - 1, col);
+  }
+  for (let row = 0; row < rows; row++) {
+    enqueueIfExterior(row, 0);
+    enqueueIfExterior(row, cols - 1);
+  }
+
+  const directions = [
+    { row: 1, col: 0 },
+    { row: -1, col: 0 },
+    { row: 0, col: 1 },
+    { row: 0, col: -1 },
+  ];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) break;
+    for (const dir of directions) {
+      enqueueIfExterior(current.row + dir.row, current.col + dir.col);
+    }
+  }
+
+  const interiorMask: boolean[][] = [];
+  for (let row = 0; row < rows; row++) {
+    interiorMask[row] = [];
+    for (let col = 0; col < cols; col++) {
+      interiorMask[row][col] = lightMask[row][col] && !exteriorMask[row][col] && !inkMask[row][col];
+    }
+  }
+
+  return interiorMask;
+}
+
+function hasOccupiedPixels(grid: boolean[][]): boolean {
+  for (const row of grid) {
+    for (const cell of row) {
+      if (cell) return true;
+    }
+  }
+  return false;
 }
 
 /**
