@@ -51,7 +51,7 @@ const WorkspaceStage = forwardRef<WorkspaceStageHandle, WorkspaceStageProps>(
             minY = Math.min(minY, bbox.y);
             maxX = Math.max(maxX, bbox.x + bbox.width);
             maxY = Math.max(maxY, bbox.y + bbox.height);
-          } catch (e) {
+          } catch {
             // getBBox can fail on some browsers, ignore
           }
         }
