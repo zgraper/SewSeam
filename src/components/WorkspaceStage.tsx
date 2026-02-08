@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { MouseEvent, TouchEvent, WheelEvent } from 'react';
 import { useStore } from '../store';
 
@@ -13,7 +13,13 @@ interface Transform {
   scale: number;
 }
 
-export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProps) {
+export interface WorkspaceStageHandle {
+  fitToContent: () => void;
+  resetView: () => void;
+}
+
+const WorkspaceStage = forwardRef<WorkspaceStageHandle, WorkspaceStageProps>(
+  function WorkspaceStage({ children, viewBox }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
   const regions = useStore((state) => state.regions);
   const selectedRegionId = useStore((state) => state.selectedRegionId);
@@ -22,10 +28,61 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
   const [isPanning, setIsPanning] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
   const [startTransform, setStartTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
+  const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
 
   // Track initial distance for pinch zoom
   const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
   const [initialPinchScale, setInitialPinchScale] = useState(1);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    fitToContent: () => {
+      if (!svgRef.current || regions.length === 0) return;
+
+      // Get bounding box of all regions
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      regions.forEach((region) => {
+        const pathElement = svgRef.current?.querySelector(`[data-region-id="${region.id}"]`) as SVGPathElement;
+        if (pathElement) {
+          try {
+            const bbox = pathElement.getBBox();
+            minX = Math.min(minX, bbox.x);
+            minY = Math.min(minY, bbox.y);
+            maxX = Math.max(maxX, bbox.x + bbox.width);
+            maxY = Math.max(maxY, bbox.y + bbox.height);
+          } catch (e) {
+            // getBBox can fail on some browsers, ignore
+          }
+        }
+      });
+
+      if (!isFinite(minX)) return;
+
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+      const contentCenterX = (minX + maxX) / 2;
+      const contentCenterY = (minY + maxY) / 2;
+
+      const svgRect = svgRef.current.getBoundingClientRect();
+      const padding = 40; // Leave some padding
+      const availableWidth = svgRect.width - padding * 2;
+      const availableHeight = svgRect.height - padding * 2;
+
+      const scaleX = availableWidth / contentWidth;
+      const scaleY = availableHeight / contentHeight;
+      const newScale = Math.min(scaleX, scaleY, 2); // Cap at 2x
+
+      // Calculate translation to center the content
+      const newX = svgRect.width / 2 - contentCenterX * newScale;
+      const newY = svgRect.height / 2 - contentCenterY * newScale;
+
+      setTransform({ x: newX, y: newY, scale: newScale });
+    },
+    resetView: () => {
+      setTransform({ x: 0, y: 0, scale: 1 });
+    },
+  }), [regions]);
 
   // Helper function to get distance between two touch points
   const getTouchDistance = (touch1: React.Touch, touch2: React.Touch): number => {
@@ -37,10 +94,18 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
   // Mouse pan handlers
   const handleMouseDown = useCallback((e: MouseEvent<SVGSVGElement>) => {
     if (e.button !== 0) return; // Only left click
+    
+    // Check if clicking on a region
+    const target = e.target as SVGElement;
+    if (!target.hasAttribute('data-region-id')) {
+      // Clicked on empty canvas, clear selection
+      setSelectedRegionId(null);
+    }
+    
     setIsPanning(true);
     setStartPoint({ x: e.clientX, y: e.clientY });
     setStartTransform({ ...transform });
-  }, [transform]);
+  }, [transform, setSelectedRegionId]);
 
   const handleMouseMove = useCallback((e: MouseEvent<SVGSVGElement>) => {
     if (!isPanning) return;
@@ -214,6 +279,9 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
         {/* Render regions as SVG paths */}
         {regions.map((region) => {
           const fabric = fabrics.find((item) => item.id === region.fabricId);
+          const isSelected = selectedRegionId === region.id;
+          const isHovered = hoveredRegionId === region.id;
+          
           return (
             <path
               key={region.id}
@@ -221,13 +289,15 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
               transform={region.transform}
               data-region-id={region.id}
               fill={fabric ? `url(#fabric-pattern-${region.id})` : "rgba(59, 130, 246, 0.1)"}
-              stroke={selectedRegionId === region.id ? "#3b82f6" : "#93c5fd"}
-              strokeWidth={selectedRegionId === region.id ? "3" : "2"}
+              stroke={isSelected ? "#3b82f6" : isHovered ? "#60a5fa" : "#93c5fd"}
+              strokeWidth={isSelected ? "3" : isHovered ? "2.5" : "2"}
               className="cursor-pointer transition-all"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedRegionId(region.id);
               }}
+              onMouseEnter={() => setHoveredRegionId(region.id)}
+              onMouseLeave={() => setHoveredRegionId(null)}
               style={{ pointerEvents: 'all' }}
             />
           );
@@ -235,4 +305,6 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
       </g>
     </svg>
   );
-}
+});
+
+export default WorkspaceStage;
