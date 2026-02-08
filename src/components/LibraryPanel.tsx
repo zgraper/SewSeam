@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStore } from '../store';
-import { X } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
+import PanelHeader from './ui/PanelHeader';
+import Section from './ui/Section';
 
 type TabType = 'patterns' | 'fabrics';
 
 export default function LibraryPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('patterns');
+  const patternInputRef = useRef<HTMLInputElement>(null);
+  const fabricInputRef = useRef<HTMLInputElement>(null);
   const { 
     patterns, 
     fabrics, 
@@ -14,15 +18,111 @@ export default function LibraryPanel() {
     setSelectedPatternId,
     setSelectedFabricId,
     removePattern,
-    removeFabric
+    removeFabric,
+    addPattern,
+    addFabric,
   } = useStore();
+
+  const handlePatternUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    
+    if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
+      reader.onload = (event) => {
+        const svgText = event.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, 'image/svg+xml');
+        const svgElement = doc.querySelector('svg');
+        
+        const viewBox = svgElement?.getAttribute('viewBox') || undefined;
+        const widthAttr = svgElement?.getAttribute('width');
+        const heightAttr = svgElement?.getAttribute('height');
+        const width = widthAttr ? Number.parseFloat(widthAttr) : undefined;
+        const height = heightAttr ? Number.parseFloat(heightAttr) : undefined;
+        
+        const patternId = crypto.randomUUID();
+        addPattern({
+          id: patternId,
+          name: file.name,
+          type: 'svg',
+          svgText,
+          width,
+          height,
+          viewBox,
+        });
+        setSelectedPatternId(patternId);
+      };
+      reader.readAsText(file);
+    } else if (file.type.startsWith('image/')) {
+      reader.onload = async (event) => {
+        const imageUrl = event.target?.result as string;
+        const img = new Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.src = imageUrl;
+        });
+        
+        const patternId = crypto.randomUUID();
+        addPattern({
+          id: patternId,
+          name: file.name,
+          type: 'image',
+          imageUrl,
+          width: img.naturalWidth || img.width,
+          height: img.naturalHeight || img.height,
+          viewBox: `0 0 ${img.naturalWidth || img.width} ${img.naturalHeight || img.height}`,
+        });
+        setSelectedPatternId(patternId);
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    e.target.value = '';
+  };
+
+  const handleFabricUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const imageUrl = event.target?.result as string;
+      const img = new Image();
+      await new Promise((resolve) => {
+        img.onload = resolve;
+        img.src = imageUrl;
+      });
+      
+      const fabricId = crypto.randomUUID();
+      addFabric({
+        id: fabricId,
+        name: file.name,
+        imageUrl,
+        width: img.naturalWidth || img.width,
+        height: img.naturalHeight || img.height,
+      });
+      setSelectedFabricId(fabricId);
+    };
+    reader.readAsDataURL(file);
+    
+    e.target.value = '';
+  };
 
   const renderPatterns = () => {
     if (patterns.length === 0) {
       return (
-        <p className="text-xs text-gray-500 text-center py-8">
-          No patterns uploaded yet
-        </p>
+        <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-600 mb-3">No patterns uploaded yet</p>
+          <button
+            onClick={() => patternInputRef.current?.click()}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Upload size={14} />
+            Upload Pattern
+          </button>
+        </div>
       );
     }
 
@@ -84,9 +184,16 @@ export default function LibraryPanel() {
   const renderFabrics = () => {
     if (fabrics.length === 0) {
       return (
-        <p className="text-xs text-gray-500 text-center py-8">
-          No fabrics uploaded yet
-        </p>
+        <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-sm text-gray-600 mb-3">No fabrics uploaded yet</p>
+          <button
+            onClick={() => fabricInputRef.current?.click()}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Upload size={14} />
+            Upload Fabric
+          </button>
+        </div>
       );
     }
 
@@ -141,37 +248,55 @@ export default function LibraryPanel() {
   };
 
   return (
-    <div className="p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-gray-700">Library</h2>
+    <div className="p-4">
+      <Section>
+        <PanelHeader>Library</PanelHeader>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('patterns')}
-          className={`px-3 py-2 text-sm font-medium transition-colors ${
-            activeTab === 'patterns'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          Patterns ({patterns.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('fabrics')}
-          className={`px-3 py-2 text-sm font-medium transition-colors ${
-            activeTab === 'fabrics'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          Fabrics ({fabrics.length})
-        </button>
-      </div>
+        {/* Hidden file inputs */}
+        <input
+          ref={patternInputRef}
+          type="file"
+          accept=".svg,image/*"
+          onChange={handlePatternUpload}
+          className="hidden"
+        />
+        <input
+          ref={fabricInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFabricUpload}
+          className="hidden"
+        />
 
-      {/* Tab content */}
-      <div className="pt-2">
-        {activeTab === 'patterns' ? renderPatterns() : renderFabrics()}
-      </div>
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('patterns')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'patterns'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Patterns ({patterns.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('fabrics')}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'fabrics'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            Fabrics ({fabrics.length})
+          </button>
+        </div>
+
+        {/* Tab content */}
+        <div className="pt-2">
+          {activeTab === 'patterns' ? renderPatterns() : renderFabrics()}
+        </div>
+      </Section>
     </div>
   );
 }

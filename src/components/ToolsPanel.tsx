@@ -2,6 +2,9 @@ import { Upload, MousePointer, Scissors, RotateCcw } from 'lucide-react';
 import { useStore } from '../store';
 import { useRef } from 'react';
 import { extractOuterBoundary } from '../utils/rasterBoundaryExtractor';
+import PanelHeader from './ui/PanelHeader';
+import Section from './ui/Section';
+import Divider from './ui/Divider';
 
 const loadImageSize = (src: string) =>
   new Promise<{ width: number; height: number }>((resolve, reject) => {
@@ -118,63 +121,65 @@ export default function ToolsPanel() {
   };
 
   return (
-    <div className="p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">Tools</h2>
-      
-      <button
-        onClick={() => patternInputRef.current?.click()}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition-colors"
-      >
-        <Upload size={16} />
-        Upload Pattern
-      </button>
-      <input
-        ref={patternInputRef}
-        type="file"
-        accept=".svg,image/*"
-        onChange={handlePatternUpload}
-        className="hidden"
-      />
+    <div className="p-4">
+      <Section>
+        <PanelHeader>Tools</PanelHeader>
+        
+        <button
+          onClick={() => patternInputRef.current?.click()}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
+        >
+          <Upload size={16} />
+          Upload Pattern
+        </button>
+        <input
+          ref={patternInputRef}
+          type="file"
+          accept=".svg,image/*"
+          onChange={handlePatternUpload}
+          className="hidden"
+        />
 
-      <button
-        onClick={() => fabricInputRef.current?.click()}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition-colors"
-      >
-        <Upload size={16} />
-        Upload Fabric
-      </button>
-      <input
-        ref={fabricInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFabricUpload}
-        className="hidden"
-      />
+        <button
+          onClick={() => fabricInputRef.current?.click()}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
+        >
+          <Upload size={16} />
+          Upload Fabric
+        </button>
+        <input
+          ref={fabricInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFabricUpload}
+          className="hidden"
+        />
 
-      <button
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition-colors"
-      >
-        <MousePointer size={16} />
-        Select Tool
-      </button>
+        <button
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
+        >
+          <MousePointer size={16} />
+          Select Tool
+        </button>
 
-      <button
-        disabled
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 bg-gray-100 border border-gray-200 rounded cursor-not-allowed"
-      >
-        <Scissors size={16} />
-        Split Tool
-      </button>
+        <button
+          disabled
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed"
+        >
+          <Scissors size={16} />
+          Split Tool
+        </button>
 
-      <div className="border-t border-gray-200 my-3 pt-3">
+        <Divider />
+
         <button
           onClick={reset}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 bg-white border border-red-300 rounded hover:bg-red-50 active:bg-red-100 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors shadow-sm"
         >
           <RotateCcw size={16} />
           Reset
         </button>
-      </div>
+      </Section>
     </div>
   );
 }
