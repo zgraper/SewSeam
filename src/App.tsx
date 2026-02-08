@@ -5,6 +5,7 @@ import LibraryPanel from './components/LibraryPanel';
 import Workspace from './components/Workspace';
 import PropertiesPanel from './components/PropertiesPanel';
 import MobileToolbar, { MobileDrawer } from './components/MobileToolbar';
+import VectorizeModal from './components/VectorizeModal';
 import Divider from './components/ui/Divider';
 
 function App() {
@@ -55,6 +56,9 @@ function App() {
       >
         <PropertiesPanel />
       </MobileDrawer>
+
+      {/* Vectorize Modal */}
+      <VectorizeModal />
     </div>
   );
 }

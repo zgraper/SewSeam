@@ -1,10 +1,11 @@
-import { useStore } from '../store';
+import { useStore, getEditorState } from '../store';
 import { FileImage, Maximize2, RotateCcw } from 'lucide-react';
 import WorkspaceStage from './WorkspaceStage';
 import { useRef, useEffect } from 'react';
 
 export default function Workspace() {
   const { patterns, selectedPatternId, addRegion } = useStore();
+  const editorState = useStore(getEditorState);
   const pattern = patterns.find((p) => p.id === selectedPatternId);
   const patternViewBox = pattern?.viewBox
     || (pattern?.width && pattern?.height ? `0 0 ${pattern.width} ${pattern.height}` : undefined);
@@ -142,28 +143,90 @@ export default function Workspace() {
         />
         
         <div className="relative w-full h-full border border-gray-300 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden">
-          {!pattern ? (
-            <div className="text-center text-gray-400">
+          {/* Empty State: No pattern loaded */}
+          {editorState === 'empty' ? (
+            <div className="text-center text-gray-400 max-w-sm px-6">
               <FileImage size={48} className="mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium">No pattern loaded</p>
-              <p className="text-xs mt-1">Upload a pattern to get started</p>
+              <p className="text-sm font-medium mb-2">No pattern loaded</p>
+              <p className="text-xs mt-1 mb-4">Upload a pattern to get started</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                <p className="text-xs text-blue-800 font-medium mb-2">💡 Quick Start:</p>
+                <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                  <li>Upload a pattern (SVG or image)</li>
+                  <li>Add fabric textures</li>
+                  <li>Apply fabrics to regions</li>
+                </ol>
+              </div>
             </div>
-          ) : pattern.type === 'svg' && pattern.svgText ? (
-            <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
-              <g ref={svgContainerRef} />
-            </WorkspaceStage>
-          ) : pattern.type === 'image' && pattern.imageUrl ? (
-            <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
-              <image
-                href={pattern.imageUrl}
-                x="0"
-                y="0"
-                width={pattern.width || 800}
-                height={pattern.height || 600}
-                preserveAspectRatio="xMidYMid meet"
-              />
-            </WorkspaceStage>
-          ) : null}
+          ) : editorState === 'pattern_loaded' ? (
+            <>
+              {pattern?.type === 'svg' && pattern.svgText ? (
+                <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                  <g ref={svgContainerRef} />
+                </WorkspaceStage>
+              ) : pattern?.type === 'image' && pattern.imageUrl ? (
+                <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                  <image
+                    href={pattern.imageUrl}
+                    x="0"
+                    y="0"
+                    width={pattern.width || 800}
+                    height={pattern.height || 600}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                </WorkspaceStage>
+              ) : null}
+              {/* Helper hint for pattern loaded state */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 shadow-md max-w-md">
+                <p className="text-xs text-blue-800">
+                  <span className="font-medium">Next step:</span> Upload fabric textures in the Library panel to apply to your pattern regions
+                </p>
+              </div>
+            </>
+          ) : editorState === 'fabric_loaded' ? (
+            <>
+              {pattern?.type === 'svg' && pattern.svgText ? (
+                <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                  <g ref={svgContainerRef} />
+                </WorkspaceStage>
+              ) : pattern?.type === 'image' && pattern.imageUrl ? (
+                <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                  <image
+                    href={pattern.imageUrl}
+                    x="0"
+                    y="0"
+                    width={pattern.width || 800}
+                    height={pattern.height || 600}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                </WorkspaceStage>
+              ) : null}
+              {/* Helper hint for fabric loaded state */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 shadow-md max-w-md">
+                <p className="text-xs text-blue-800">
+                  <span className="font-medium">Next step:</span> Drag and drop fabrics onto pattern regions in the Properties panel
+                </p>
+              </div>
+            </>
+          ) : (
+            // Ready state - just show the workspace without hints
+            pattern?.type === 'svg' && pattern.svgText ? (
+              <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                <g ref={svgContainerRef} />
+              </WorkspaceStage>
+            ) : pattern?.type === 'image' && pattern.imageUrl ? (
+              <WorkspaceStage ref={workspaceStageRef} viewBox={patternViewBox}>
+                <image
+                  href={pattern.imageUrl}
+                  x="0"
+                  y="0"
+                  width={pattern.width || 800}
+                  height={pattern.height || 600}
+                  preserveAspectRatio="xMidYMid meet"
+                />
+              </WorkspaceStage>
+            ) : null
+          )}
         </div>
       </div>
     </div>

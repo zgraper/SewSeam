@@ -33,6 +33,8 @@ export default function LibraryPanel() {
     removeFabric,
     addPattern,
     addFabric,
+    setShowVectorizeModal,
+    setVectorizingPatternId,
   } = useStore();
 
   // Filter items based on search query
@@ -80,6 +82,10 @@ export default function LibraryPanel() {
         const imageUrl = await readFileAsDataUrl(file);
         const dimensions = await loadImageDimensions(imageUrl);
         const patternId = crypto.randomUUID();
+        
+        // Check if this is a PNG or JPG that needs vectorization
+        const needsVectorization = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg';
+        
         addPattern({
           id: patternId,
           name: file.name,
@@ -88,8 +94,15 @@ export default function LibraryPanel() {
           width: dimensions.width,
           height: dimensions.height,
           viewBox: `0 0 ${dimensions.width} ${dimensions.height}`,
+          needsVectorization,
         });
         setSelectedPatternId(patternId);
+        
+        // Show vectorization modal for raster images
+        if (needsVectorization) {
+          setVectorizingPatternId(patternId);
+          setShowVectorizeModal(true);
+        }
       } else {
         setErrorMessage('Invalid file type. Please upload an SVG or image file.');
         clearError();
