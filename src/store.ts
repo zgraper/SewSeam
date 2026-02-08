@@ -33,6 +33,7 @@ export interface Region {
   pathData: string;
   transform: string;
   fabricTransform: FabricTransform;
+  fabricId: string | null;
 }
 
 export type DrawerType = 'tools' | 'regions' | 'properties' | null;
@@ -89,6 +90,9 @@ export const useStore = create<AppState>((set) => ({
     set((state) => ({
       fabrics: state.fabrics.filter((f) => f.id !== id),
       selectedFabricId: state.selectedFabricId === id ? null : state.selectedFabricId,
+      regions: state.regions.map((region) =>
+        region.fabricId === id ? { ...region, fabricId: null } : region
+      ),
     })),
   setSelectedPatternId: (id) => set({ selectedPatternId: id }),
   setSelectedFabricId: (id) => set({ selectedFabricId: id }),

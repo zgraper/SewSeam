@@ -101,6 +101,11 @@ export default function LibraryPanel() {
                 : 'border-gray-200 hover:border-gray-300'
             }`}
             onClick={() => setSelectedFabricId(fabric.id)}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData('text/fabric-id', fabric.id);
+              event.dataTransfer.effectAllowed = 'copy';
+            }}
           >
             {/* Thumbnail */}
             <div className="aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
