@@ -93,8 +93,8 @@ export default function VectorizeModal() {
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <span className="font-medium">Note:</span> This feature converts your raster image to a vector outline. 
-                The algorithm detects the outer boundary of your pattern.
+                <span className="font-medium">Note:</span> This feature converts your raster image to a vector outline.
+                It detects enclosed regions inside dark line art (ideal for white backgrounds) and falls back to the outer boundary if needed.
               </p>
             </div>
 
