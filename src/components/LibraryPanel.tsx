@@ -23,7 +23,7 @@ export default function LibraryPanel() {
     addFabric,
   } = useStore();
 
-  const handlePatternUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePatternUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -56,25 +56,23 @@ export default function LibraryPanel() {
       };
       reader.readAsText(file);
     } else if (file.type.startsWith('image/')) {
-      reader.onload = async (event) => {
+      reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         const img = new Image();
-        await new Promise((resolve) => {
-          img.onload = resolve;
-          img.src = imageUrl;
-        });
-        
-        const patternId = crypto.randomUUID();
-        addPattern({
-          id: patternId,
-          name: file.name,
-          type: 'image',
-          imageUrl,
-          width: img.naturalWidth || img.width,
-          height: img.naturalHeight || img.height,
-          viewBox: `0 0 ${img.naturalWidth || img.width} ${img.naturalHeight || img.height}`,
-        });
-        setSelectedPatternId(patternId);
+        img.onload = () => {
+          const patternId = crypto.randomUUID();
+          addPattern({
+            id: patternId,
+            name: file.name,
+            type: 'image',
+            imageUrl,
+            width: img.naturalWidth || img.width,
+            height: img.naturalHeight || img.height,
+            viewBox: `0 0 ${img.naturalWidth || img.width} ${img.naturalHeight || img.height}`,
+          });
+          setSelectedPatternId(patternId);
+        };
+        img.src = imageUrl;
       };
       reader.readAsDataURL(file);
     }
@@ -87,23 +85,21 @@ export default function LibraryPanel() {
     if (!file || !file.type.startsWith('image/')) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       const imageUrl = event.target?.result as string;
       const img = new Image();
-      await new Promise((resolve) => {
-        img.onload = resolve;
-        img.src = imageUrl;
-      });
-      
-      const fabricId = crypto.randomUUID();
-      addFabric({
-        id: fabricId,
-        name: file.name,
-        imageUrl,
-        width: img.naturalWidth || img.width,
-        height: img.naturalHeight || img.height,
-      });
-      setSelectedFabricId(fabricId);
+      img.onload = () => {
+        const fabricId = crypto.randomUUID();
+        addFabric({
+          id: fabricId,
+          name: file.name,
+          imageUrl,
+          width: img.naturalWidth || img.width,
+          height: img.naturalHeight || img.height,
+        });
+        setSelectedFabricId(fabricId);
+      };
+      img.src = imageUrl;
     };
     reader.readAsDataURL(file);
     

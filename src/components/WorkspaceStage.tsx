@@ -52,7 +52,8 @@ const WorkspaceStage = forwardRef<WorkspaceStageHandle, WorkspaceStageProps>(
             maxX = Math.max(maxX, bbox.x + bbox.width);
             maxY = Math.max(maxY, bbox.y + bbox.height);
           } catch {
-            // getBBox can fail on some browsers, ignore
+            // getBBox can fail on some browsers/invalid paths - skip this region
+            console.warn(`Failed to get bounding box for region ${region.id}`);
           }
         }
       });
