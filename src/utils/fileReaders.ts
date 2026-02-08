@@ -81,7 +81,11 @@ export function parseSvgMetadata(svgText: string): {
   const width = widthAttr ? Number.parseFloat(widthAttr) : undefined;
   const height = heightAttr ? Number.parseFloat(heightAttr) : undefined;
 
-  return { viewBox, width, height };
+  return {
+    viewBox,
+    width: width && !isNaN(width) ? width : undefined,
+    height: height && !isNaN(height) ? height : undefined,
+  };
 }
 
 /**

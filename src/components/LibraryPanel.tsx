@@ -63,9 +63,8 @@ export default function LibraryPanel() {
       if (isSvgFile(file)) {
         const svgText = await readFileAsText(file);
         const metadata = parseSvgMetadata(svgText);
-        const viewBox = metadata.viewBox || (metadata.width && metadata.height
-          ? `0 0 ${metadata.width} ${metadata.height}`
-          : undefined);
+        const viewBox = metadata.viewBox || 
+          (metadata.width && metadata.height ? `0 0 ${metadata.width} ${metadata.height}` : undefined);
         const patternId = crypto.randomUUID();
         addPattern({
           id: patternId,
@@ -140,6 +139,19 @@ export default function LibraryPanel() {
     }
   };
 
+  const handleFileDrop = async (file: File, type: 'pattern' | 'fabric') => {
+    // Create a synthetic event to reuse the existing upload handlers
+    const syntheticEvent = {
+      target: { files: [file], value: '' }
+    } as unknown as React.ChangeEvent<HTMLInputElement>;
+
+    if (type === 'pattern') {
+      await handlePatternUpload(syntheticEvent);
+    } else {
+      await handleFabricUpload(syntheticEvent);
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, type: 'pattern' | 'fabric') => {
     e.preventDefault();
     setIsDraggingOver(false);
@@ -147,14 +159,7 @@ export default function LibraryPanel() {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
-    if (type === 'pattern') {
-      // Create a synthetic event to reuse the existing upload handler
-      const event = { target: { files: [file], value: '' } } as unknown as React.ChangeEvent<HTMLInputElement>;
-      await handlePatternUpload(event);
-    } else {
-      const event = { target: { files: [file], value: '' } } as unknown as React.ChangeEvent<HTMLInputElement>;
-      await handleFabricUpload(event);
-    }
+    await handleFileDrop(file, type);
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
