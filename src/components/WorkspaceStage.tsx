@@ -17,9 +17,7 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
   const svgRef = useRef<SVGSVGElement>(null);
   const regions = useStore((state) => state.regions);
   const selectedRegionId = useStore((state) => state.selectedRegionId);
-  const setSelectedRegionId = useStore((state) => state.setSelectedRegionId);
-  const { fabrics, selectedFabricId } = useStore();
-  const fabric = fabrics.find((f) => f.id === selectedFabricId);
+  const { fabrics, updateRegion, setSelectedRegionId } = useStore();
   const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
@@ -126,6 +124,25 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
     }));
   }, [transform.scale]);
 
+  const handleDragOver = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    if (e.dataTransfer.types.includes('text/fabric-id')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    const fabricId = e.dataTransfer.getData('text/fabric-id');
+    if (!fabricId) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const pathElement = target?.closest?.('[data-region-id]') as SVGPathElement | null;
+    const regionId = pathElement?.getAttribute('data-region-id');
+    if (!regionId) return;
+    e.preventDefault();
+    updateRegion(regionId, { fabricId });
+    setSelectedRegionId(regionId);
+  }, [setSelectedRegionId, updateRegion]);
+
   // Update SVG viewBox dimensions when container size changes (only when no explicit viewBox)
   useEffect(() => {
     if (!svgRef.current) return;
@@ -159,11 +176,15 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       style={{ cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none' }}
     >
       <defs>
         {/* Define fabric patterns for each region */}
-        {fabric && regions.map((region) => {
+        {regions.map((region) => {
+          const fabric = fabrics.find((item) => item.id === region.fabricId);
+          if (!fabric) return null;
           const ft = region.fabricTransform;
           const patternWidth = fabric.width || 100;
           const patternHeight = fabric.height || 100;
@@ -191,22 +212,26 @@ export default function WorkspaceStage({ children, viewBox }: WorkspaceStageProp
         {children}
         
         {/* Render regions as SVG paths */}
-        {regions.map((region) => (
-          <path
-            key={region.id}
-            d={region.pathData}
-            transform={region.transform}
-            fill={fabric ? `url(#fabric-pattern-${region.id})` : "rgba(59, 130, 246, 0.1)"}
-            stroke={selectedRegionId === region.id ? "#3b82f6" : "#93c5fd"}
-            strokeWidth={selectedRegionId === region.id ? "3" : "2"}
-            className="cursor-pointer transition-all"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedRegionId(region.id);
-            }}
-            style={{ pointerEvents: 'all' }}
-          />
-        ))}
+        {regions.map((region) => {
+          const fabric = fabrics.find((item) => item.id === region.fabricId);
+          return (
+            <path
+              key={region.id}
+              d={region.pathData}
+              transform={region.transform}
+              data-region-id={region.id}
+              fill={fabric ? `url(#fabric-pattern-${region.id})` : "rgba(59, 130, 246, 0.1)"}
+              stroke={selectedRegionId === region.id ? "#3b82f6" : "#93c5fd"}
+              strokeWidth={selectedRegionId === region.id ? "3" : "2"}
+              className="cursor-pointer transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedRegionId(region.id);
+              }}
+              style={{ pointerEvents: 'all' }}
+            />
+          );
+        })}
       </g>
     </svg>
   );

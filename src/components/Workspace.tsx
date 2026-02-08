@@ -45,6 +45,7 @@ export default function Workspace() {
                 name: 'Outer Boundary',
                 pathData,
                 transform,
+                fabricId: null,
                 fabricTransform: {
                   x: 0,
                   y: 0,
@@ -67,6 +68,7 @@ export default function Workspace() {
           name: 'Pattern Boundary',
           pathData: pattern.convertedPathData,
           transform: '',
+          fabricId: null,
           fabricTransform: {
             x: 0,
             y: 0,
