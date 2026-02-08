@@ -52,6 +52,8 @@ export default function Workspace() {
                   y: 0,
                   scale: 1,
                   rotation: 0,
+                  flipX: false,
+                  flipY: false,
                 },
               });
               
@@ -80,6 +82,8 @@ export default function Workspace() {
             y: 0,
             scale: 1,
             rotation: 0,
+            flipX: false,
+            flipY: false,
           },
         });
         
