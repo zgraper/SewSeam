@@ -22,7 +22,7 @@ export async function rasterToOuterPath(imageUrl: string): Promise<VectorizeResu
   // 2. Apply edge detection or contour tracing
   // 3. Convert the boundary to SVG path commands
   
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     // Load image to get dimensions
     const img = new Image();
     img.onload = () => {
@@ -47,6 +47,7 @@ export async function rasterToOuterPath(imageUrl: string): Promise<VectorizeResu
         height,
       });
     };
+    img.onerror = () => reject(new Error('Failed to load image for vectorization'));
     img.src = imageUrl;
   });
 }
