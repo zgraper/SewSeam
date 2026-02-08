@@ -25,6 +25,8 @@ export interface FabricTransform {
   y: number;
   scale: number;
   rotation: number;
+  flipX: boolean;
+  flipY: boolean;
 }
 
 export interface Region {
