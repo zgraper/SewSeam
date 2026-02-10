@@ -36,7 +36,15 @@ const parseSvgMetadata = (svgText: string) => {
 };
 
 export default function ToolsPanel() {
-  const { addPattern, addFabric, reset, setSelectedFabricId, setSelectedPatternId } = useStore();
+  const {
+    addPattern,
+    addFabric,
+    reset,
+    setSelectedFabricId,
+    setSelectedPatternId,
+    activeTool,
+    setActiveTool,
+  } = useStore();
   const patternInputRef = useRef<HTMLInputElement>(null);
   const fabricInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +53,7 @@ export default function ToolsPanel() {
     if (!file) return;
 
     const reader = new FileReader();
-    
+
     if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
       reader.onload = (event) => {
         const svgText = event.target?.result as string;
@@ -69,14 +77,14 @@ export default function ToolsPanel() {
     } else if (file.type.startsWith('image/')) {
       reader.onload = async (event) => {
         const imageUrl = event.target?.result as string;
-        
+
         // Extract boundary from raster image
         const [boundaryResult, imageSize] = await Promise.all([
           extractOuterBoundary(imageUrl),
           loadImageSize(imageUrl),
         ]);
         const patternId = crypto.randomUUID();
-        
+
         addPattern({
           id: patternId,
           name: file.name,
@@ -91,7 +99,7 @@ export default function ToolsPanel() {
       };
       reader.readAsDataURL(file);
     }
-    
+
     // Reset input so the same file can be uploaded again
     e.target.value = '';
   };
@@ -115,7 +123,7 @@ export default function ToolsPanel() {
       setSelectedFabricId(fabricId);
     };
     reader.readAsDataURL(file);
-    
+
     // Reset input so the same file can be uploaded again
     e.target.value = '';
   };
@@ -124,7 +132,7 @@ export default function ToolsPanel() {
     <div className="p-4">
       <Section>
         <PanelHeader>Tools</PanelHeader>
-        
+
         <button
           onClick={() => patternInputRef.current?.click()}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
@@ -156,19 +164,32 @@ export default function ToolsPanel() {
         />
 
         <button
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm"
+          onClick={() => setActiveTool('select')}
+          className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-lg transition-colors shadow-sm ${
+            activeTool === 'select'
+              ? 'text-blue-700 bg-blue-50 border-blue-300'
+              : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+          }`}
         >
           <MousePointer size={16} />
           Select Tool
         </button>
 
         <button
-          disabled
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed"
+          onClick={() => setActiveTool('split')}
+          className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium border rounded-lg transition-colors shadow-sm ${
+            activeTool === 'split'
+              ? 'text-blue-700 bg-blue-50 border-blue-300'
+              : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+          }`}
         >
           <Scissors size={16} />
           Split Tool
         </button>
+
+        <p className="text-xs text-gray-500 px-1">
+          Split tool: click inside a region to split it into left/right pieces.
+        </p>
 
         <Divider />
 
