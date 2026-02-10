@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store';
-import type { FabricTransform } from '../store';
+import type { FabricTransform, Region } from '../store';
 import PanelHeader from './ui/PanelHeader';
 import Section from './ui/Section';
 import Divider from './ui/Divider';
@@ -49,6 +49,22 @@ export default function PropertiesPanel() {
   const handleNameChange = (newName: string) => {
     if (!selectedRegion) return;
     updateRegion(selectedRegion.id, { name: newName });
+  };
+
+  const handleRegionBoundsChange = (
+    property: keyof NonNullable<Region['clipRect']>,
+    value: number,
+  ) => {
+    if (!selectedRegion || !selectedRegion.clipRect) return;
+    const nextClipRect = {
+      ...selectedRegion.clipRect,
+      [property]: value,
+    };
+
+    nextClipRect.width = Math.max(1, nextClipRect.width);
+    nextClipRect.height = Math.max(1, nextClipRect.height);
+
+    updateRegion(selectedRegion.id, { clipRect: nextClipRect });
   };
 
   const handleResetTransform = () => {
@@ -137,6 +153,55 @@ export default function PropertiesPanel() {
                   <Trash2 size={14} />
                   Delete Region
                 </button>
+              </CollapsibleSection>
+
+
+              {/* Region Bounds Section */}
+              <CollapsibleSection title="Region Bounds" defaultOpen={false}>
+                {selectedRegion.clipRect ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">X</label>
+                      <input
+                        type="number"
+                        value={selectedRegion.clipRect.x}
+                        onChange={(e) => handleRegionBoundsChange('x', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Y</label>
+                      <input
+                        type="number"
+                        value={selectedRegion.clipRect.y}
+                        onChange={(e) => handleRegionBoundsChange('y', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Width</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={selectedRegion.clipRect.width}
+                        onChange={(e) => handleRegionBoundsChange('width', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Height</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={selectedRegion.clipRect.height}
+                        onChange={(e) => handleRegionBoundsChange('height', Number(e.target.value))}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Region bounds will appear once detected in the workspace.</p>
+                )}
               </CollapsibleSection>
 
               {/* Fabric Transform Section */}

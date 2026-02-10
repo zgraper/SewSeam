@@ -35,9 +35,17 @@ export interface Region {
   name: string;
   pathData: string;
   transform: string;
+  clipRect?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   fabricTransform: FabricTransform;
   fabricId: string | null;
 }
+
+export type ToolMode = 'select' | 'split';
 
 export type DrawerType = 'tools' | 'regions' | 'properties' | null;
 export type EditorState = 'empty' | 'pattern_loaded' | 'fabric_loaded' | 'ready';
@@ -49,6 +57,7 @@ interface AppState {
   selectedFabricId: string | null;
   regions: Region[];
   selectedRegionId: string | null;
+  activeTool: ToolMode;
   ui: {
     activeDrawer: DrawerType;
     showVectorizeModal: boolean;
@@ -66,6 +75,7 @@ interface AppState {
   updateRegion: (id: string, updates: Partial<Region>) => void;
   removeRegion: (id: string) => void;
   setSelectedRegionId: (id: string | null) => void;
+  setActiveTool: (tool: ToolMode) => void;
   setActiveDrawer: (drawer: DrawerType) => void;
   setShowVectorizeModal: (show: boolean) => void;
   setVectorizingPatternId: (id: string | null) => void;
@@ -115,6 +125,7 @@ const initialState = {
   selectedFabricId: null,
   regions: [],
   selectedRegionId: null,
+  activeTool: 'select' as ToolMode,
   ui: {
     activeDrawer: null as DrawerType,
     showVectorizeModal: false,
@@ -153,6 +164,7 @@ export const useStore = create<AppState>((set) => ({
       selectedRegionId: state.selectedRegionId === id ? null : state.selectedRegionId,
     })),
   setSelectedRegionId: (id) => set({ selectedRegionId: id }),
+  setActiveTool: (tool) => set({ activeTool: tool }),
   setActiveDrawer: (drawer) => set((state) => ({ ui: { ...state.ui, activeDrawer: drawer } })),
   setShowVectorizeModal: (show) => set((state) => ({ ui: { ...state.ui, showVectorizeModal: show } })),
   setVectorizingPatternId: (id) => set((state) => ({ ui: { ...state.ui, vectorizingPatternId: id } })),
